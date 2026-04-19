@@ -17,10 +17,11 @@ class PosOrder(models.Model):
                         try:
                             # Generar de inmediato la clave de acceso para que viaje al frontend usando superusuario
                             if not sri_edis[0].l10n_ec_xml_access_key:
-                                sri_edis[0].sudo()._l10n_ec_get_info_tributaria(move.sudo())
+                                info = sri_edis[0].sudo()._l10n_ec_get_info_tributaria(move.sudo())
+                                access_key = info.get('claveAcceso') or ''
                                 # Forzar el write en base de datos de manera definitiva
-                                if sri_edis[0].l10n_ec_xml_access_key:
-                                    sri_edis.sudo().write({'l10n_ec_xml_access_key': sri_edis[0].l10n_ec_xml_access_key})
+                                if access_key:
+                                    sri_edis.sudo().write({'l10n_ec_xml_access_key': access_key})
                         except Exception as e:
                             import logging
                             logging.getLogger(__name__).error("Error generating SRI XML access key immediately in POS checkout: %s", str(e))
