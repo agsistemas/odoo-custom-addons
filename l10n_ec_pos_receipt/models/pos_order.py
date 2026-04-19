@@ -4,6 +4,20 @@ class PosOrder(models.Model):
     _inherit = 'pos.order'
 
     @api.model
+    def _export_for_ui(self, order):
+        result = super()._export_for_ui(order)
+        if order.account_move and order.account_move.company_id.account_fiscal_country_id.code == 'EC':
+            move = order.account_move
+            sri_edis = move.sudo().edi_document_ids.filtered(lambda d: hasattr(d.edi_format_id, 'code') and d.edi_format_id.code == 'l10n_ec_format_sri')
+            if sri_edis:
+                result['l10n_ec_xml_access_key'] = sri_edis[0].l10n_ec_xml_access_key or ''
+            else:
+                result['l10n_ec_xml_access_key'] = ''
+            result['l10n_latam_document_number'] = move.l10n_latam_document_number or ''
+            result['company_env'] = move.company_id.l10n_ec_type_environment if hasattr(move.company_id, 'l10n_ec_type_environment') else ''
+        return result
+
+    @api.model
     def create_from_ui(self, orders, draft=False):
         res = super().create_from_ui(orders, draft=draft)
         # res is a list of dicts: [{'id': 1, 'account_move': 2, ...}]
@@ -22,6 +36,11 @@ class PosOrder(models.Model):
                                 # Forzar el write en base de datos de manera definitiva
                                 if access_key:
                                     sri_edis.sudo().write({'l10n_ec_xml_access_key': access_key})
+                                    move.sudo().invalidate_recordset(['l10n_ec_xml_access_key'])
+                                    # El PDF se estaba adjuntando prematuramente (antes de que asignemos la clave).
+                                    # Lo borramos para que Odoo lo regenere con la clave impresa al intentar descargarlo.
+                                    if hasattr(move, 'invoice_pdf_report_id') and move.invoice_pdf_report_id:
+                                        move.sudo().invoice_pdf_report_id.unlink()
                         except Exception as e:
                             import logging
                             logging.getLogger(__name__).error("Error generating SRI XML access key immediately in POS checkout: %s", str(e))
