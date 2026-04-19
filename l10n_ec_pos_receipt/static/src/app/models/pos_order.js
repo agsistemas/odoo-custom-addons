@@ -28,6 +28,21 @@ patch(Order.prototype, {
         this.company_env = this.company_env || "";
     },
 
+    init_from_JSON(json) {
+        super.init_from_JSON(...arguments);
+        this.l10n_ec_xml_access_key = json.l10n_ec_xml_access_key || "";
+        this.l10n_latam_document_number = json.l10n_latam_document_number || "";
+        this.company_env = json.company_env || "";
+    },
+
+    export_as_JSON() {
+        const json = super.export_as_JSON(...arguments);
+        json.l10n_ec_xml_access_key = this.l10n_ec_xml_access_key;
+        json.l10n_latam_document_number = this.l10n_latam_document_number;
+        json.company_env = this.company_env;
+        return json;
+    },
+
     export_for_printing() {
         const result = super.export_for_printing(...arguments);
         result.l10n_ec_xml_access_key = this.l10n_ec_xml_access_key;
