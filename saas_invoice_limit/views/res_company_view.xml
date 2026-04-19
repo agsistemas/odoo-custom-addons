@@ -5,7 +5,9 @@
         <field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='currency_id']" position="after">
-                <field name="saas_invoice_monthly_limit"/>
+                <field name="saas_invoice_monthly_limit" string="Límite SaaS (0 = Sin Límite)" />
+                <field name="saas_invoice_monthly_used" readonly="1" invisible="saas_invoice_monthly_limit == 0"/>
+                <field name="saas_invoice_monthly_remaining" readonly="1" invisible="saas_invoice_monthly_limit == 0"/>
             </xpath>
         </field>
     </record>

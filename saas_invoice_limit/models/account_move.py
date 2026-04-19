@@ -5,7 +5,7 @@ from datetime import date
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
-    def action_post(self):
+    def _post(self, soft=True):
         # Primero, verificamos si hay límite configurado
         for move in self:
             # Solo nos importa si es Factura de Cliente (out_invoice)
@@ -36,4 +36,4 @@ class AccountMove(models.Model):
                         raise UserError(msg)
 
         # Si todo está bien, ejecutamos el código original de Odoo
-        return super(AccountMove, self).action_post()
+        return super()._post(soft=soft)
