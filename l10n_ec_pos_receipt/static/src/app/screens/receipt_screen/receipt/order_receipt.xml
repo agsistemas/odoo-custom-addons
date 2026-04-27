@@ -1,33 +1,122 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ec_pos_receipt.OrderReceipt" t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension" owl="1">
-        <xpath expr="//div[hasclass('before-footer')]" position="before">
-            <t t-if="props.data.l10n_ec_xml_access_key and props.data.l10n_ec_print_edi_receipt">
-                <br/>
-                <div class="pos-receipt-center-align" style="font-weight: bold; margin-top: 5px;">
+        
+        <!-- Insert customer info and invoice data after ReceiptHeader -->
+        <xpath expr="//ReceiptHeader" position="after">
+            <t t-if="props.data.l10n_ec_print_edi_receipt">
+                <div class="pos-receipt-center-align" style="font-weight: bold; margin-top: -15px; margin-bottom: 5px;">
                     FACTURA ELECTRÓNICA
                 </div>
-                <!-- Optional Document Number if requested -->
-                <t t-if="props.data.l10n_latam_document_number">
-                    <div class="pos-receipt-center-align">
-                        <t t-esc="props.data.l10n_latam_document_number"/>
-                    </div>
-                </t>
-                <div style="font-size: 80%; text-align: center; margin-top: 5px;">
-                    <div><strong>CLAVE DE ACCESO:</strong></div>
-                    <div style="word-break: break-all; margin: 3px 0;">
-                        <t t-esc="props.data.l10n_ec_xml_access_key"/>
+                <div style="font-size: 85%; text-align: left;">
+                    <div><strong>FECHA:</strong> <t t-esc="props.data.date"/></div>
+                    <div><strong>NÚMERO:</strong> <t t-esc="props.data.l10n_latam_document_number or props.data.name"/></div>
+                    <div>
+                        <strong>CLAVE DE ACCESO:</strong>
+                        <div style="word-break: break-all;"><t t-esc="props.data.l10n_ec_xml_access_key"/></div>
                     </div>
                     <div>
-                        <t t-if="props.data.company_env == '1'">
-                            Ambiente: Pruebas
-                        </t>
-                        <t t-elif="props.data.company_env == '2'">
-                            Ambiente: Producción
-                        </t>
+                        <strong>AMBIENTE:</strong> 
+                        <t t-if="props.data.company_env == '2'">Producción</t>
+                        <t t-else="">Pruebas</t>
                     </div>
+                    <div><strong>EMISIÓN:</strong> Normal</div>
+                    
+                    <t t-if="props.data.partner">
+                        <div style="margin-top: 5px; border-top: 1px dashed black; padding-top: 5px;">
+                            <div><strong>CLIENTE:</strong> <t t-esc="props.data.partner.name"/></div>
+                            <div><strong>RUC/CÉDULA:</strong> <t t-esc="props.data.partner.vat or '9999999999999'"/></div>
+                            <t t-if="props.data.partner.address">
+                                <div><strong>DIRECCIÓN:</strong> <t t-esc="props.data.partner.address"/></div>
+                            </t>
+                            <t t-if="props.data.partner.phone or props.data.partner.mobile">
+                                <div><strong>TELÉFONO:</strong> <t t-esc="props.data.partner.phone or props.data.partner.mobile"/></div>
+                            </t>
+                            <t t-if="props.data.partner.email">
+                                <div><strong>EMAIL:</strong> <t t-esc="props.data.partner.email"/></div>
+                            </t>
+                        </div>
+                    </t>
+                    <div style="border-bottom: 1px dashed black; margin-bottom: 5px; margin-top: 5px;"></div>
                 </div>
-                <br/>
+            </t>
+        </xpath>
+
+        <!-- Insert Ecuadorian subtotals before pos-receipt-amount -->
+        <xpath expr="//div[hasclass('pos-receipt-amount')][1]" position="before">
+            <t t-if="props.data.l10n_ec_print_edi_receipt and props.data.ec_subtotals">
+                <div style="font-size: 85%; margin-top: 10px; margin-bottom: 5px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>SUBTOTAL:</strong></span>
+                        <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.sin_impuestos)"/></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>SUBTOTAL 0%:</strong></span>
+                        <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.subtotal_0)"/></span>
+                    </div>
+                    <t t-if="props.data.ec_subtotals.subtotal_15 > 0">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>SUBTOTAL 15%:</strong></span>
+                            <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.subtotal_15)"/></span>
+                        </div>
+                    </t>
+                    <t t-if="props.data.ec_subtotals.subtotal_no_objeto > 0">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>SUBTOTAL NO OBJETO DE IVA:</strong></span>
+                            <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.subtotal_no_objeto)"/></span>
+                        </div>
+                    </t>
+                    <t t-if="props.data.ec_subtotals.subtotal_exento > 0">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>SUBTOTAL EXENTO DE IVA:</strong></span>
+                            <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.subtotal_exento)"/></span>
+                        </div>
+                    </t>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>TOTAL DESCUENTO:</strong></span>
+                        <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.descuento)"/></span>
+                    </div>
+                    <t t-if="props.data.ec_subtotals.ice > 0">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>ICE:</strong></span>
+                            <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.ice)"/></span>
+                        </div>
+                    </t>
+                    <t t-if="props.data.ec_subtotals.irbpnr > 0">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>IRBPNR:</strong></span>
+                            <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.irbpnr)"/></span>
+                        </div>
+                    </t>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>IVA 15%:</strong></span>
+                        <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.iva_15)"/></span>
+                    </div>
+                    <t t-if="props.data.tip_amount > 0">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>PROPINA:</strong></span>
+                            <span><t t-esc="props.formatCurrency(props.data.tip_amount)"/></span>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </xpath>
+        
+        <!-- Hide standard Odoo tax table -->
+        <xpath expr="//div[hasclass('pos-receipt-taxes')]" position="attributes">
+            <attribute name="t-if">!props.data.l10n_ec_print_edi_receipt and props.data.tax_details.length > 0</attribute>
+        </xpath>
+        
+        <!-- Replace Powered by Odoo text -->
+        <xpath expr="//div[hasclass('pos-receipt-order-data')]/p" position="replace">
+            <t t-if="props.data.l10n_ec_print_edi_receipt">
+                <div style="text-align: center; font-size: 80%; margin-top: 10px;">
+                    Desarrollado por AGSistemas Marcabelí:<br/>
+                    Ing. Servio Jr. Paladines 0985655088
+                </div>
+            </t>
+            <t t-else="">
+                <p>Powered by Odoo</p>
             </t>
         </xpath>
     </t>
