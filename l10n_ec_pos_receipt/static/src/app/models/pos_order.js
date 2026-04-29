@@ -79,12 +79,11 @@ patch(Order.prototype, {
         }
         
         let ec_subtotals = {
-            subtotal_0: 0.0,
-            subtotal_15: 0.0,
+            subtotals_iva: {},
+            ivas: {},
             subtotal_no_objeto: 0.0,
             subtotal_exento: 0.0,
             sin_impuestos: 0.0,
-            iva_15: 0.0,
             ice: 0.0,
             irbpnr: 0.0,
             descuento: 0.0
@@ -97,32 +96,35 @@ patch(Order.prototype, {
 
                 const taxes = line.get_taxes();
                 if (!taxes || taxes.length === 0) {
-                    ec_subtotals.subtotal_0 += price_without_tax;
+                    ec_subtotals.subtotals_iva['0'] = (ec_subtotals.subtotals_iva['0'] || 0) + price_without_tax;
                 } else {
-                    let has_15 = false;
                     let has_exento = false;
                     let has_no_objeto = false;
+                    let iva_pct = 0;
                     
                     taxes.forEach(t => {
                         const name = (t.name || "").toLowerCase();
-                        const amount = t.amount;
-                        if (amount === 15 || name.includes('15%') || name.includes('iva 15')) {
-                            has_15 = true;
-                        } else if (name.includes('exento')) {
+                        if (name.includes('exento')) {
                             has_exento = true;
                         } else if (name.includes('no objeto')) {
                             has_no_objeto = true;
+                        } else if (!name.includes('ice') && !name.includes('irbpnr')) {
+                            let pct = t.amount;
+                            if (pct > 0 && pct < 1) pct = pct * 100;
+                            if (pct > iva_pct) {
+                                iva_pct = pct;
+                            }
                         }
                     });
                     
-                    if (has_15) {
-                        ec_subtotals.subtotal_15 += price_without_tax;
-                    } else if (has_exento) {
+                    if (has_exento) {
                         ec_subtotals.subtotal_exento += price_without_tax;
                     } else if (has_no_objeto) {
                         ec_subtotals.subtotal_no_objeto += price_without_tax;
                     } else {
-                        ec_subtotals.subtotal_0 += price_without_tax;
+                        // Eliminar decimales innecesarios (e.g. 15.0 -> 15)
+                        const key = parseFloat(iva_pct.toFixed(2)).toString();
+                        ec_subtotals.subtotals_iva[key] = (ec_subtotals.subtotals_iva[key] || 0) + price_without_tax;
                     }
                 }
                 
@@ -139,15 +141,39 @@ patch(Order.prototype, {
             const taxDetails = this.get_tax_details();
             taxDetails.forEach(td => {
                 const name = (td.name || "").toLowerCase();
-                if (name.includes('15%') || name.includes('iva 15') || td.amount === 15 || td.amount === 0.15) {
-                    ec_subtotals.iva_15 += td.amount;
-                } else if (name.includes('ice')) {
+                if (name.includes('ice')) {
                     ec_subtotals.ice += td.amount;
                 } else if (name.includes('irbpnr')) {
                     ec_subtotals.irbpnr += td.amount;
+                } else if (!name.includes('exento') && !name.includes('no objeto')) {
+                    let pct = 0;
+                    if (td.tax && td.tax.amount !== undefined) {
+                        pct = td.tax.amount;
+                    } else {
+                        // Intenta sacar el porcentaje del nombre como respaldo
+                        const match = name.match(/(\d+(?:\.\d+)?)\s*%/);
+                        if (match) {
+                            pct = parseFloat(match[1]);
+                        }
+                    }
+                    if (pct > 0 && pct < 1) pct = pct * 100;
+                    if (td.amount > 0) {
+                        const key = parseFloat(pct.toFixed(2)).toString();
+                        ec_subtotals.ivas[key] = (ec_subtotals.ivas[key] || 0) + td.amount;
+                    }
                 }
             });
         }
+        
+        // Convertir a arrays para fácil renderizado en XML
+        ec_subtotals.subtotals_iva_arr = Object.entries(ec_subtotals.subtotals_iva).map(([pct, amount]) => ({ pct, amount }));
+        if (!ec_subtotals.subtotals_iva_arr.find(i => i.pct === '0')) {
+            ec_subtotals.subtotals_iva_arr.push({ pct: '0', amount: 0 });
+        }
+        ec_subtotals.subtotals_iva_arr.sort((a, b) => parseFloat(a.pct) - parseFloat(b.pct));
+
+        ec_subtotals.ivas_arr = Object.entries(ec_subtotals.ivas).map(([pct, amount]) => ({ pct, amount }));
+        ec_subtotals.ivas_arr.sort((a, b) => parseFloat(a.pct) - parseFloat(b.pct));
         
         result.ec_subtotals = ec_subtotals;
         

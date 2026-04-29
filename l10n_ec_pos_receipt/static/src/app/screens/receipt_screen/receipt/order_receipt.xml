@@ -79,15 +79,13 @@
                         <span><strong>SUBTOTAL:</strong></span>
                         <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.sin_impuestos)"/></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span><strong>SUBTOTAL 0%:</strong></span>
-                        <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.subtotal_0)"/></span>
-                    </div>
-                    <t t-if="props.data.ec_subtotals.subtotal_15 > 0">
-                        <div style="display: flex; justify-content: space-between;">
-                            <span><strong>SUBTOTAL 15%:</strong></span>
-                            <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.subtotal_15)"/></span>
-                        </div>
+                    <t t-foreach="props.data.ec_subtotals.subtotals_iva_arr" t-as="sub_iva" t-key="sub_iva.pct">
+                        <t t-if="sub_iva.amount > 0 or sub_iva.pct == '0'">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span><strong>SUBTOTAL <t t-esc="sub_iva.pct"/>%:</strong></span>
+                                <span><t t-esc="props.formatCurrency(sub_iva.amount)"/></span>
+                            </div>
+                        </t>
                     </t>
                     <t t-if="props.data.ec_subtotals.subtotal_no_objeto > 0">
                         <div style="display: flex; justify-content: space-between;">
@@ -117,10 +115,12 @@
                             <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.irbpnr)"/></span>
                         </div>
                     </t>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span><strong>IVA 15%:</strong></span>
-                        <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.iva_15)"/></span>
-                    </div>
+                    <t t-foreach="props.data.ec_subtotals.ivas_arr" t-as="iva" t-key="iva.pct">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><strong>IVA <t t-esc="iva.pct"/>%:</strong></span>
+                            <span><t t-esc="props.formatCurrency(iva.amount)"/></span>
+                        </div>
+                    </t>
                     <t t-if="props.data.tip_amount > 0">
                         <div style="display: flex; justify-content: space-between;">
                             <span><strong>PROPINA:</strong></span>
