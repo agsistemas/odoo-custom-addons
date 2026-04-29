@@ -5,10 +5,10 @@
         <!-- Insert customer info and invoice data after ReceiptHeader -->
         <xpath expr="//ReceiptHeader" position="after">
             <t t-if="props.data.l10n_ec_print_edi_receipt">
-                <div class="pos-receipt-center-align" style="font-weight: bold; margin-top: -15px; margin-bottom: 5px;">
+                <div class="pos-receipt-center-align" style="font-weight: bold; margin-top: -10px; margin-bottom: 2px;">
                     FACTURA ELECTRÓNICA
                 </div>
-                <div style="font-size: 85%; text-align: left;">
+                <div style="font-size: 80%; text-align: left; line-height: 1.1;">
                     <div><strong>FECHA:</strong> <t t-esc="props.data.date"/></div>
                     <div><strong>NÚMERO:</strong> <t t-esc="props.data.l10n_latam_document_number or props.data.name"/></div>
                     <div>
@@ -23,7 +23,7 @@
                     <div><strong>EMISIÓN:</strong> Normal</div>
                     
                     <t t-if="props.data.partner">
-                        <div style="margin-top: 5px; border-top: 1px dashed black; padding-top: 5px;">
+                        <div style="margin-top: 2px; border-top: 1px dashed black; padding-top: 2px;">
                             <div><strong>CLIENTE:</strong> <t t-esc="props.data.partner.name"/></div>
                             <div><strong>RUC/CÉDULA:</strong> <t t-esc="props.data.partner.vat or '9999999999999'"/></div>
                             <t t-if="props.data.partner.address">
@@ -37,15 +37,44 @@
                             </t>
                         </div>
                     </t>
-                    <div style="border-bottom: 1px dashed black; margin-bottom: 5px; margin-top: 5px;"></div>
+                    <div style="border-bottom: 1px dashed black; margin-bottom: 2px; margin-top: 2px;"></div>
                 </div>
             </t>
+        </xpath>
+
+        <!-- Replace orderlines to simplify product data -->
+        <!-- Replace orderlines to simplify product data -->
+        <xpath expr="//OrderWidget" position="attributes">
+            <attribute name="t-if">!props.data.l10n_ec_print_edi_receipt</attribute>
+        </xpath>
+        <xpath expr="//OrderWidget" position="after">
+            <div class="edi-orderlines" style="font-size: 80%; line-height: 1.1; margin-top: 2px;" t-if="props.data.l10n_ec_print_edi_receipt">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid black; font-weight: bold; margin-bottom: 2px; padding-bottom: 2px;">
+                    <div style="width: 15%;">CANT</div>
+                    <div style="width: 55%;">DESCRIPCIÓN</div>
+                    <div style="width: 30%; text-align: right;">TOTAL</div>
+                </div>
+                <t t-foreach="props.data.orderlines" t-as="line" t-key="line_index || line.id">
+                    <div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed #ccc;">
+                        <div style="width: 15%; text-align: left;">
+                            <t t-esc="line.qty" />
+                        </div>
+                        <div style="width: 55%; text-align: left; padding-left: 2px;">
+                            <t t-esc="line.productName" />
+                        </div>
+                        <div style="width: 30%; text-align: right;">
+                            <t t-esc="line.price" />
+                        </div>
+                    </div>
+                </t>
+                <div style="border-bottom: 1px dashed black; margin-top: 2px;"></div>
+            </div>
         </xpath>
 
         <!-- Insert Ecuadorian subtotals before pos-receipt-amount -->
         <xpath expr="//div[hasclass('pos-receipt-amount')][1]" position="before">
             <t t-if="props.data.l10n_ec_print_edi_receipt and props.data.ec_subtotals">
-                <div style="font-size: 85%; margin-top: 10px; margin-bottom: 5px;">
+                <div style="font-size: 80%; margin-top: 5px; margin-bottom: 5px; line-height: 1.1;">
                     <div style="display: flex; justify-content: space-between;">
                         <span><strong>SUBTOTAL:</strong></span>
                         <span><t t-esc="props.formatCurrency(props.data.ec_subtotals.sin_impuestos)"/></span>

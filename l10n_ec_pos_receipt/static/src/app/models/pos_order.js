@@ -66,6 +66,18 @@ patch(Order.prototype, {
         result.company_env = this.company_env;
         result.l10n_ec_print_edi_receipt = this.pos?.config?.l10n_ec_print_edi_receipt || false;
         
+        const partner = this.get_partner();
+        if (partner) {
+            result.partner = {
+                name: partner.name,
+                vat: partner.vat,
+                address: partner.contact_address || partner.address || "",
+                phone: partner.phone || partner.mobile || "",
+                mobile: partner.mobile || "",
+                email: partner.email || ""
+            };
+        }
+        
         let ec_subtotals = {
             subtotal_0: 0.0,
             subtotal_15: 0.0,
@@ -94,7 +106,7 @@ patch(Order.prototype, {
                     taxes.forEach(t => {
                         const name = (t.name || "").toLowerCase();
                         const amount = t.amount;
-                        if (amount === 15 || name.includes('15')) {
+                        if (amount === 15 || name.includes('15%') || name.includes('iva 15')) {
                             has_15 = true;
                         } else if (name.includes('exento')) {
                             has_exento = true;
@@ -127,7 +139,7 @@ patch(Order.prototype, {
             const taxDetails = this.get_tax_details();
             taxDetails.forEach(td => {
                 const name = (td.name || "").toLowerCase();
-                if (name.includes('15')) {
+                if (name.includes('15%') || name.includes('iva 15') || td.amount === 15 || td.amount === 0.15) {
                     ec_subtotals.iva_15 += td.amount;
                 } else if (name.includes('ice')) {
                     ec_subtotals.ice += td.amount;
